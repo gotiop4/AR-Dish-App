@@ -87,71 +87,44 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const fileInput = document.getElementById('file-input');
-            const statusDiv = document.getElementById('status');
-            const qrContainer = document.getElementById('qr-container');
-            const imagePreview = document.getElementById('image-preview');
-
-            fileInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                statusDiv.textContent = 'Processing...';
-                qrContainer.innerHTML = '';
-                imagePreview.style.display = 'none';
-
-                if (!file.type.match('image.*')) {
-                    statusDiv.textContent = 'Please select an image file (JPEG/PNG)';
-                    return;
-                }
-
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('file-input');
+        const statusDiv = document.getElementById('status');
+        const qrContainer = document.getElementById('qr-container');
+    
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+    
+            statusDiv.textContent = 'Processing...';
+            qrContainer.innerHTML = '';
+    
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // Encode image data directly in the URL (hash-based)
+                    const imageData = encodeURIComponent(e.target.result);
+                    const arViewerUrl = `${window.location.origin}${window.location.pathname.replace('index.html', '')}ar-viewer.html#${imageData}`;
                     
-                    try {
-                        // Generate unique session ID
-                        const sessionId = 'ar-' + Date.now();
-                        
-                        // Store image data temporarily
-                        sessionStorage.setItem(sessionId, e.target.result);
-                        
-                        // Create QR with session ID
-                        const arViewerUrl = `${window.location.origin}${window.location.pathname.replace('index.html', '')}ar-viewer.html?id=${sessionId}`;
-                        
-                        new QRCode(qrContainer, {
-                            text: arViewerUrl,
-                            width: 200,
-                            height: 200,
-                            colorDark: "#000000",
-                            colorLight: "#ffffff",
-                            correctLevel: QRCode.CorrectLevel.H
-                        });
-                        
-                        statusDiv.innerHTML = '<span style="color:#4285f4">✓ QR code generated!</span><br>Scan within 5 minutes';
-                        console.log('Generated QR for:', arViewerUrl);
-                        
-                        // Auto-clear after 5 minutes
-                        setTimeout(() => {
-                            sessionStorage.removeItem(sessionId);
-                            console.log('Cleared session:', sessionId);
-                        }, 300000);
-                    } catch (error) {
-                        statusDiv.innerHTML = '<span style="color:#d32f2f">✗ Error generating QR</span>';
-                        console.error('QR Error:', error);
-                    }
-                };
-                
-                reader.onerror = function() {
-                    statusDiv.innerHTML = '<span style="color:#d32f2f">✗ Error reading file</span>';
-                };
-                
-                reader.readAsDataURL(file);
-            });
+                    new QRCode(qrContainer, {
+                        text: arViewerUrl,
+                        width: 200,
+                        height: 200,
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    
+                    statusDiv.innerHTML = '<span style="color:#4285f4">✓ QR generated!</span>';
+                    console.log('QR points to:', arViewerUrl);
+                } catch (error) {
+                    statusDiv.innerHTML = '<span style="color:#d32f2f">✗ QR error</span>';
+                    console.error(error);
+                }
+            };
+            
+            reader.readAsDataURL(file);
         });
+    });
     </script>
 </body>
 </html>
