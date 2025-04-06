@@ -7,6 +7,8 @@
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
         }
         #qr-container {
             margin: 20px auto;
@@ -19,39 +21,42 @@
             margin: 10px 0;
             min-height: 20px;
         }
-        .btn {
+        .upload-btn {
             padding: 10px 15px;
             background: #4285f4;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 16px;
             display: inline-block;
         }
         #file-input {
             display: none;
         }
         #image-preview {
-            max-width: 300px;
+            max-width: 100%;
+            max-height: 200px;
             margin: 10px auto;
+            display: block;
         }
     </style>
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
     <h1>AR Dish Scanner</h1>
+    <p>Upload a photo to generate AR QR code</p>
     
-    <label for="file-input" class="btn">
+    <label for="file-input" class="upload-btn">
         Choose Image
     </label>
     <input type="file" id="file-input" accept="image/*">
     
-    <div id="status">Select an image to begin</div>
+    <div id="status">Ready to scan...</div>
     <img id="image-preview" style="display:none;">
     <div id="qr-container"></div>
 
-    <!-- Using more reliable QR library -->
-    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
-    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('file-input');
@@ -69,7 +74,7 @@
 
                 // Verify it's an image
                 if (!file.type.match('image.*')) {
-                    statusDiv.textContent = 'Please select an image file';
+                    statusDiv.textContent = 'Please select an image file (JPEG/PNG)';
                     return;
                 }
 
@@ -80,27 +85,29 @@
                     imagePreview.src = e.target.result;
                     imagePreview.style.display = 'block';
                     
-                    // Generate QR code
                     try {
-                        // Create shorter URL to prevent QR code complexity
-                        const pageUrl = window.location.href.split('?')[0];
-                        const arUrl = pageUrl.replace('index.html', 'ar-viewer.html') + 
-                                     '?img=' + encodeURIComponent(file.name);
+                        // Generate proper AR viewer URL
+                        const currentUrl = window.location.href;
+                        const baseUrl = currentUrl.includes('index.html') 
+                            ? currentUrl.replace('index.html', '')
+                            : currentUrl;
                         
-                        // Clear previous QR
+                        const arViewerUrl = baseUrl + 'ar-viewer.html?image=' + 
+                                          encodeURIComponent(e.target.result);
+                        
+                        // Generate QR code
                         qrContainer.innerHTML = '';
-                        
                         new QRCode(qrContainer, {
-                            text: arUrl,
+                            text: arViewerUrl,
                             width: 200,
                             height: 200,
                             correctLevel: QRCode.CorrectLevel.H
                         });
                         
-                        statusDiv.textContent = 'QR generated! Scan with another device';
-                        console.log('Success! QR for:', arUrl);
+                        statusDiv.textContent = 'QR code generated! Scan with another device.';
+                        console.log('QR points to:', arViewerUrl);
                     } catch (error) {
-                        statusDiv.textContent = 'QR generation failed';
+                        statusDiv.textContent = 'Error generating QR code';
                         console.error('QR Error:', error);
                     }
                 };
