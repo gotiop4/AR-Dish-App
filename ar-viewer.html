@@ -17,10 +17,15 @@
   </model-viewer>
 
   <script>
-    // Get the scanned image URL
+  // Get the image data from the QR code
     const params = new URLSearchParams(window.location.search);
-    const imageUrl = params.get('image');
-    console.log("Scanned Image URL:", imageUrl);
+    const imageData = params.get('image');
+  
+  // Display the scanned image (for debugging)
+    document.body.innerHTML += `
+      <h2>Scanned Dish:</h2>
+      <img src="${imageData}" style="max-width: 300px;">
+    `;
   </script>
 </body>
 </html>
