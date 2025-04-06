@@ -3,10 +3,10 @@ document.getElementById('camera').addEventListener('change', (e) => {
   const reader = new FileReader();
 
   reader.onload = () => {
-    // Generate QR code linking to AR viewer
-    const imageUrl = URL.createObjectURL(file);
+    // Generate QR code with FULL GitHub Pages URL
+    const githubPagesUrl = "https://gotiop4.github.io/AR-Dish-App/ar-viewer.html";
     new QRCode(document.getElementById('qr-code'), {
-      text: `ar-viewer.html?image=${imageUrl}`,
+      text: `${githubPagesUrl}?image=${encodeURIComponent(reader.result)}`,
       width: 200,
       height: 200
     });
