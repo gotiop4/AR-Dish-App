@@ -1,16 +1,110 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AR Dish Scanner</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Dish Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #qr-container {
+            margin: 20px auto;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            min-height: 220px;
+        }
+        #status {
+            color: #666;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 15px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="file"] {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <h1>Scan Your Dish 📸</h1>
-  <input type="file" id="camera" accept="image/*">
-  <div id="qr-code"></div>
+    <h1>AR Dish Scanner</h1>
+    <p>Upload a photo to generate AR QR code</p>
+    
+    <label for="image-upload">
+        <button>Choose Image</button>
+    </label>
+    <input type="file" id="image-upload" accept="image/*">
+    
+    <div id="status">Ready to scan...</div>
+    <div id="qr-container"></div>
 
-  <!-- QR Code Library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-  <script src="app.js"></script>
+    <!-- Using jsQR library which is more reliable -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadInput = document.getElementById('image-upload');
+            const qrContainer = document.getElementById('qr-container');
+            const statusDiv = document.getElementById('status');
+            
+            uploadInput.addEventListener('change', function(e) {
+                if (!e.target.files.length) return;
+                
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    // Clear previous QR
+                    qrContainer.innerHTML = '';
+                    statusDiv.textContent = 'Processing image...';
+                    
+                    // Create image element to check the upload
+                    const img = new Image();
+                    img.onload = function() {
+                        // Generate QR code with current page's origin
+                        const arViewerUrl = window.location.origin + 
+                                          window.location.pathname.replace('index.html', 'ar-viewer.html') + 
+                                          '?image=' + encodeURIComponent(event.target.result);
+                        
+                        // Create QR code using jsQR's canvas method
+                        const canvas = document.createElement('canvas');
+                        qrContainer.appendChild(canvas);
+                        
+                        jsQR.qr.toCanvas({
+                            canvas: canvas,
+                            value: arViewerUrl,
+                            size: 200
+                        }).then(() => {
+                            statusDiv.textContent = 'Scan this QR code with another device:';
+                            console.log('QR generated successfully for:', arViewerUrl);
+                        }).catch(error => {
+                            statusDiv.textContent = 'Error generating QR: ' + error.message;
+                            console.error('QR generation failed:', error);
+                        });
+                    };
+                    img.src = event.target.result;
+                };
+                
+                reader.onerror = function() {
+                    statusDiv.textContent = 'Error reading file';
+                };
+                
+                reader.readAsDataURL(file);
+            });
+            
+            // Debug info
+            console.log('Page fully loaded');
+            console.log('QR library available:', typeof jsQR !== 'undefined');
+        });
+    </script>
 </body>
 </html>
