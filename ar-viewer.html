@@ -98,34 +98,21 @@
     </div>
 
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const sessionId = params.get('id');
+    document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('container');
-        const contentDiv = document.getElementById('content');
+        const imageData = decodeURIComponent(window.location.hash.substring(1));
         
-        if (sessionId) {
-            const imageData = sessionStorage.getItem(sessionId);
-            
-            if (imageData) {
-                document.getElementById('scanned-image').src = imageData;
-                
-                // TODO: Replace with your 3D model initialization
-                console.log('AR session ready:', sessionId);
-                
-            } else {
-                contentDiv.innerHTML = `
-                    <h2 class="error">⌛ Session Expired</h2>
-                    <p>The QR code has expired (valid for 5 minutes).</p>
-                    <a href="index.html" class="btn">↩ Back to Scanner</a>
-                `;
-            }
+        if (imageData) {
+            document.getElementById('scanned-image').src = imageData;
+            console.log('Image loaded from URL');
         } else {
-            contentDiv.innerHTML = `
-                <h2 class="error">❌ Invalid QR Code</h2>
-                <p>Please scan a valid QR code from the scanner app.</p>
+            container.innerHTML = `
+                <h2 class="error">❌ Missing Image Data</h2>
+                <p>Scan a valid QR code from the scanner.</p>
                 <a href="index.html" class="btn">↩ Back to Scanner</a>
             `;
         }
+    });
     </script>
 </body>
 </html>
