@@ -15,9 +15,6 @@
             width: 200px;
             height: 200px;
             border: 1px dashed #ccc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
         #status {
             color: #666;
@@ -41,8 +38,11 @@
             max-height: 200px;
             margin: 15px auto;
             display: none;
+            border-radius: 8px;
         }
     </style>
+    <!-- Using reliable QR library -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.min.js"></script>
 </head>
 <body>
     <h1>AR Dish Scanner</h1>
@@ -55,22 +55,37 @@
     
     <div id="status">Ready to scan...</div>
     <img id="image-preview">
-    <div id="qr-code">QR will appear here</div>
+    <div id="qr-code"></div>
 
-    <!-- Using native Canvas API - no external dependencies -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('file-input');
             const statusDiv = document.getElementById('status');
-            const qrDiv = document.getElementById('qr-code');
+            const qrCodeElement = document.getElementById('qr-code');
             const imagePreview = document.getElementById('image-preview');
+
+            // Initialize QR code generator
+            const qrCode = new QRCodeStyling({
+                width: 200,
+                height: 200,
+                data: "",
+                image: "",
+                dotsOptions: {
+                    color: "#000000",
+                    type: "square"
+                },
+                backgroundOptions: {
+                    color: "#ffffff",
+                }
+            });
+
+            qrCode.append(qrCodeElement);
 
             fileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
                 
                 statusDiv.textContent = 'Processing...';
-                qrDiv.innerHTML = 'Generating QR...';
                 imagePreview.style.display = 'none';
 
                 if (!file.type.match('image.*')) {
@@ -89,13 +104,16 @@
                         const arUrl = window.location.href.replace('index.html', 'ar-viewer.html') + 
                                      '#img=' + encodeURIComponent(e.target.result);
                         
-                        // Generate QR code using native Canvas
-                        generateQRCode(arUrl, qrDiv);
-                        statusDiv.innerHTML = '<span style="color:green">✓ QR generated!</span>';
+                        // Update QR code
+                        qrCode.update({
+                            data: arUrl
+                        });
+                        
+                        statusDiv.innerHTML = '<span style="color:#4285f4">✓ QR code generated!</span>';
+                        console.log('QR points to:', arUrl);
                     } catch (error) {
-                        qrDiv.innerHTML = 'QR Error';
-                        statusDiv.innerHTML = '<span style="color:red">✗ ' + error.message + '</span>';
-                        console.error(error);
+                        statusDiv.innerHTML = '<span style="color:#d32f2f">✗ Error generating QR</span>';
+                        console.error('QR Error:', error);
                     }
                 };
                 
@@ -105,41 +123,6 @@
                 
                 reader.readAsDataURL(file);
             });
-
-            function generateQRCode(text, container) {
-                // Create canvas
-                const canvas = document.createElement('canvas');
-                const size = 200;
-                canvas.width = size;
-                canvas.height = size;
-                container.innerHTML = '';
-                container.appendChild(canvas);
-                
-                // Simple QR code generation
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, size, size);
-                
-                // This is a simplified QR-like pattern
-                // For production, use a proper QR library
-                ctx.fillStyle = 'black';
-                const moduleSize = 10;
-                const data = text; // Simplified for demo
-                
-                // Draw simple pattern
-                for (let i = 0; i < data.length; i++) {
-                    const x = (i % 15) * moduleSize;
-                    const y = Math.floor(i / 15) * moduleSize;
-                    if (data.charCodeAt(i) % 2 === 0) {
-                        ctx.fillRect(x, y, moduleSize, moduleSize);
-                    }
-                }
-                
-                // Add border
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 5;
-                ctx.strokeRect(0, 0, size, size);
-            }
         });
     </script>
 </body>
