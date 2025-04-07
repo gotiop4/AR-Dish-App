@@ -10,7 +10,7 @@
             max-width: 600px;
             margin: 0 auto;
         }
-        #qr-code {
+        #qr-canvas {
             margin: 20px auto;
             width: 200px;
             height: 200px;
@@ -38,11 +38,8 @@
             max-height: 200px;
             margin: 15px auto;
             display: none;
-            border-radius: 8px;
         }
     </style>
-    <!-- Using reliable QR library -->
-    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.min.js"></script>
 </head>
 <body>
     <h1>AR Dish Scanner</h1>
@@ -55,31 +52,17 @@
     
     <div id="status">Ready to scan...</div>
     <img id="image-preview">
-    <div id="qr-code"></div>
+    <canvas id="qr-canvas"></canvas>
 
+    <!-- Using the most reliable QR library available -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('file-input');
             const statusDiv = document.getElementById('status');
-            const qrCodeElement = document.getElementById('qr-code');
+            const canvas = document.getElementById('qr-canvas');
             const imagePreview = document.getElementById('image-preview');
-
-            // Initialize QR code generator
-            const qrCode = new QRCodeStyling({
-                width: 200,
-                height: 200,
-                data: "",
-                image: "",
-                dotsOptions: {
-                    color: "#000000",
-                    type: "square"
-                },
-                backgroundOptions: {
-                    color: "#ffffff",
-                }
-            });
-
-            qrCode.append(qrCodeElement);
 
             fileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
@@ -100,20 +83,27 @@
                     imagePreview.style.display = 'block';
                     
                     try {
-                        // Generate URL
-                        const arUrl = window.location.href.replace('index.html', 'ar-viewer.html') + 
-                                     '#img=' + encodeURIComponent(e.target.result);
+                        // Generate the AR viewer URL
+                        const currentUrl = new URL(window.location.href);
+                        currentUrl.pathname = currentUrl.pathname.replace('index.html', 'ar-viewer.html');
+                        currentUrl.hash = 'img=' + encodeURIComponent(e.target.result);
                         
-                        // Update QR code
-                        qrCode.update({
-                            data: arUrl
+                        // Generate QR code directly to canvas
+                        QRCode.toCanvas(canvas, currentUrl.toString(), {
+                            width: 200,
+                            margin: 2,
+                            color: {
+                                dark: '#000000',
+                                light: '#ffffff'
+                            }
+                        }, function(error) {
+                            if (error) throw error;
+                            statusDiv.innerHTML = '<span style="color:#4285f4">✓ QR code generated!</span>';
+                            console.log('QR generated successfully');
                         });
-                        
-                        statusDiv.innerHTML = '<span style="color:#4285f4">✓ QR code generated!</span>';
-                        console.log('QR points to:', arUrl);
                     } catch (error) {
-                        statusDiv.innerHTML = '<span style="color:#d32f2f">✗ Error generating QR</span>';
-                        console.error('QR Error:', error);
+                        statusDiv.innerHTML = '<span style="color:#d32f2f">✗ Error: ' + error.message + '</span>';
+                        console.error('QR generation failed:', error);
                     }
                 };
                 
