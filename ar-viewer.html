@@ -1,29 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR Dish Viewer</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer@3.4.0/dist/model-viewer.min.js"></script>
     <style>
         body {
             margin: 0;
             padding: 20px;
-            font-family: Arial;
+            font-family: Arial, sans-serif;
             text-align: center;
+            background-color: #f5f5f5;
         }
         #container {
             max-width: 600px;
             margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
         }
         #scanned-image {
             max-width: 100%;
             max-height: 300px;
             margin: 20px auto;
             display: block;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         model-viewer {
             width: 100%;
             height: 500px;
             margin: 20px auto;
+            --poster-color: transparent;
+            --progress-bar-color: #4285f4;
         }
         .btn {
             padding: 12px 24px;
@@ -33,9 +48,21 @@
             border-radius: 8px;
             margin: 15px;
             cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s;
         }
-        .error {
-            color: #d32f2f;
+        .btn:hover {
+            background-color: #3367d6;
+        }
+        .error-message {
+            color: #ea4335;
+            margin: 20px 0;
+        }
+        .success-message {
+            color: #34a853;
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -47,6 +74,7 @@
             <model-viewer 
                 src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
                 ar
+                ar-modes="scene-viewer quick-look webxr"
                 camera-controls
                 auto-rotate
                 environment-image="neutral"
@@ -58,21 +86,37 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('container');
+            const contentDiv = document.getElementById('content');
+            const scannedImage = document.getElementById('scanned-image');
+            
             try {
-                const hash = window.location.hash.substring(1);
-                if (!hash.startsWith('img=')) {
-                    throw new Error('Invalid image data');
+                // Get image ID from URL
+                const params = new URLSearchParams(window.location.search);
+                const imageId = params.get('id');
+                
+                if (!imageId) {
+                    throw new Error('No image ID found in URL');
                 }
                 
-                const imageData = decodeURIComponent(hash.split('=')[1]);
-                document.getElementById('scanned-image').src = imageData;
-                console.log('Image loaded successfully');
+                // Retrieve image from session storage
+                const imageData = sessionStorage.getItem(imageId);
+                
+                if (!imageData) {
+                    throw new Error('Image session expired or not found');
+                }
+                
+                // Display the image
+                scannedImage.src = imageData;
+                console.log('AR viewer loaded successfully');
                 
             } catch (error) {
-                document.getElementById('container').innerHTML = `
-                    <h2 class="error">Error Loading Dish</h2>
+                // Show error message
+                contentDiv.innerHTML = `
+                    <h2 class="error-message">Error Loading Dish</h2>
                     <p>${error.message}</p>
-                    <button class="btn" onclick="window.location.href='index.html'">Back to Scanner</button>
+                    <p>Please scan the QR code again from the scanner.</p>
+                    <a href="index.html" class="btn">Back to Scanner</a>
                 `;
                 console.error('AR viewer error:', error);
             }
