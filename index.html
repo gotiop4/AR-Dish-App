@@ -62,11 +62,12 @@
             color: #666;
             margin-bottom: 20px;
         }
+        /* Full CSS from previous answer */
     </style>
 </head>
 <body>
     <h1>AR Dish Scanner</h1>
-    <p class="instructions">Upload a photo to generate an AR QR code</p>
+    <p class="instructions">Upload a photo to generate AR QR code</p>
     
     <label for="file-input" class="upload-btn">
         Choose Image
@@ -75,7 +76,7 @@
     
     <div id="status">Ready to scan...</div>
     <img id="image-preview">
-    <div id="qr-container">QR code will appear here</div>
+    <div id="qr-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script>
@@ -85,68 +86,80 @@
             const qrContainer = document.getElementById('qr-container');
             const imagePreview = document.getElementById('image-preview');
 
-            fileInput.addEventListener('change', function(e) {
+            async function compressImage(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            const maxSize = 500;
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > maxSize) {
+                                    height *= maxSize / width;
+                                    width = maxSize;
+                                }
+                            } else {
+                                if (height > maxSize) {
+                                    width *= maxSize / height;
+                                    height = maxSize;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            canvas.toBlob(function(blob) {
+                                const reader = new FileReader();
+                                reader.onloadend = function() {
+                                    resolve(reader.result);
+                                };
+                                reader.onerror = reject;
+                                reader.readAsDataURL(blob);
+                            }, 'image/jpeg', 0.7);
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            fileInput.addEventListener('change', async function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-                
+
                 statusDiv.textContent = 'Processing...';
-                qrContainer.innerHTML = 'Generating QR code...';
+                qrContainer.innerHTML = '';
                 imagePreview.style.display = 'none';
 
-                if (!file.type.match('image.*')) {
-                    statusDiv.textContent = 'Please select an image file (JPEG/PNG)';
-                    return;
-                }
-
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
+                try {
+                    const compressedData = await compressImage(file);
+                    imagePreview.src = compressedData;
                     imagePreview.style.display = 'block';
+
+                    const arUrl = `${window.location.origin}${window.location.pathname.replace('index.html', '')}ar-viewer.html#${encodeURIComponent(compressedData)}`;
                     
-                    try {
-                        // Generate unique ID
-                        const uniqueId = 'img-' + Date.now();
-                        
-                        // Store image in session storage
-                        sessionStorage.setItem(uniqueId, e.target.result);
-                        
-                        // Create URL with ID
-                        const currentUrl = new URL(window.location.href);
-                        const basePath = currentUrl.pathname.split('/').slice(0, -1).join('/');
-                        const arUrl = `${currentUrl.origin}${basePath}/ar-viewer.html?id=${uniqueId}`;
-                        
-                        // Clear previous QR
-                        qrContainer.innerHTML = '';
-                        
-                        // Generate new QR code
-                        QRCode.toCanvas(document.createElement('canvas'), arUrl, {
-                            width: 200,
-                            margin: 2,
-                            color: {
-                                dark: '#000000',
-                                light: '#ffffff'
-                            }
-                        }, function(error, canvas) {
-                            if (error) {
-                                throw error;
-                            }
-                            qrContainer.appendChild(canvas);
-                            statusDiv.innerHTML = '<span style="color:#34a853">✓ QR code generated!</span>';
-                            console.log('QR generated for:', arUrl);
-                        });
-                    } catch (error) {
-                        qrContainer.innerHTML = 'Error generating QR';
-                        statusDiv.innerHTML = '<span style="color:#ea4335">✗ ' + error.message + '</span>';
-                        console.error('QR generation failed:', error);
-                    }
-                };
-                
-                reader.onerror = function() {
-                    statusDiv.textContent = 'Error reading file';
-                };
-                
-                reader.readAsDataURL(file);
+                    QRCode.toCanvas(qrContainer, arUrl, {
+                        width: 200,
+                        margin: 2,
+                        color: { dark: '#000000', light: '#ffffff' }
+                    }, function(error) {
+                        if (error) {
+                            statusDiv.innerHTML = '<span style="color:red">✗ QR Error</span>';
+                            console.error(error);
+                        } else {
+                            statusDiv.innerHTML = '<span style="color:green">✓ QR Generated!</span>';
+                        }
+                    });
+                } catch (error) {
+                    statusDiv.innerHTML = '<span style="color:red">✗ Error: ' + error.message + '</span>';
+                    console.error(error);
+                }
             });
         });
     </script>
