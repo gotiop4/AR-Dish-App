@@ -64,6 +64,7 @@
             color: #34a853;
             margin: 10px 0;
         }
+        /* Full CSS from previous answer */
     </style>
 </head>
 <body>
@@ -74,7 +75,6 @@
             <model-viewer 
                 src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
                 ar
-                ar-modes="scene-viewer quick-look webxr"
                 camera-controls
                 auto-rotate
                 environment-image="neutral"
@@ -89,33 +89,20 @@
             const container = document.getElementById('container');
             const contentDiv = document.getElementById('content');
             const scannedImage = document.getElementById('scanned-image');
-            
+
             try {
-                // Get image ID from URL
-                const params = new URLSearchParams(window.location.search);
-                const imageId = params.get('id');
+                const hash = window.location.hash.substring(1);
+                if (!hash) throw new Error('No image data found');
                 
-                if (!imageId) {
-                    throw new Error('No image ID found in URL');
-                }
-                
-                // Retrieve image from session storage
-                const imageData = sessionStorage.getItem(imageId);
-                
-                if (!imageData) {
-                    throw new Error('Image session expired or not found');
-                }
-                
-                // Display the image
+                const imageData = decodeURIComponent(hash);
                 scannedImage.src = imageData;
-                console.log('AR viewer loaded successfully');
+                console.log('Image loaded successfully');
                 
             } catch (error) {
-                // Show error message
                 contentDiv.innerHTML = `
                     <h2 class="error-message">Error Loading Dish</h2>
                     <p>${error.message}</p>
-                    <p>Please scan the QR code again from the scanner.</p>
+                    <p>Please scan the QR code again.</p>
                     <a href="index.html" class="btn">Back to Scanner</a>
                 `;
                 console.error('AR viewer error:', error);
