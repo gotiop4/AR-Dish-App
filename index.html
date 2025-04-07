@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR Dish Scanner</title>
     <style>
         body {
@@ -9,19 +11,30 @@
             padding: 20px;
             max-width: 600px;
             margin: 0 auto;
+            background-color: #f5f5f5;
         }
-        #qr-canvas {
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #qr-container {
             margin: 20px auto;
             width: 200px;
             height: 200px;
-            border: 1px dashed #ccc;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
         }
         #status {
             color: #666;
             margin: 15px 0;
             min-height: 24px;
+            font-size: 16px;
         }
-        .btn {
+        .upload-btn {
             padding: 12px 24px;
             background: #4285f4;
             color: white;
@@ -29,6 +42,10 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .upload-btn:hover {
+            background-color: #3367d6;
         }
         #file-input {
             display: none;
@@ -38,30 +55,34 @@
             max-height: 200px;
             margin: 15px auto;
             display: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .instructions {
+            color: #666;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
     <h1>AR Dish Scanner</h1>
-    <p>Upload a photo to generate AR QR code</p>
+    <p class="instructions">Upload a photo to generate an AR QR code</p>
     
-    <label for="file-input" class="btn">
+    <label for="file-input" class="upload-btn">
         Choose Image
     </label>
     <input type="file" id="file-input" accept="image/*">
     
     <div id="status">Ready to scan...</div>
     <img id="image-preview">
-    <canvas id="qr-canvas"></canvas>
+    <div id="qr-container">QR code will appear here</div>
 
-    <!-- Using the most reliable QR library available -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('file-input');
             const statusDiv = document.getElementById('status');
-            const canvas = document.getElementById('qr-canvas');
+            const qrContainer = document.getElementById('qr-container');
             const imagePreview = document.getElementById('image-preview');
 
             fileInput.addEventListener('change', function(e) {
@@ -69,10 +90,11 @@
                 if (!file) return;
                 
                 statusDiv.textContent = 'Processing...';
+                qrContainer.innerHTML = 'Generating QR code...';
                 imagePreview.style.display = 'none';
 
                 if (!file.type.match('image.*')) {
-                    statusDiv.textContent = 'Please select an image file';
+                    statusDiv.textContent = 'Please select an image file (JPEG/PNG)';
                     return;
                 }
 
@@ -83,26 +105,39 @@
                     imagePreview.style.display = 'block';
                     
                     try {
-                        // Generate the AR viewer URL
-                        const currentUrl = new URL(window.location.href);
-                        currentUrl.pathname = currentUrl.pathname.replace('index.html', 'ar-viewer.html');
-                        currentUrl.hash = 'img=' + encodeURIComponent(e.target.result);
+                        // Generate unique ID
+                        const uniqueId = 'img-' + Date.now();
                         
-                        // Generate QR code directly to canvas
-                        QRCode.toCanvas(canvas, currentUrl.toString(), {
+                        // Store image in session storage
+                        sessionStorage.setItem(uniqueId, e.target.result);
+                        
+                        // Create URL with ID
+                        const currentUrl = new URL(window.location.href);
+                        const basePath = currentUrl.pathname.split('/').slice(0, -1).join('/');
+                        const arUrl = `${currentUrl.origin}${basePath}/ar-viewer.html?id=${uniqueId}`;
+                        
+                        // Clear previous QR
+                        qrContainer.innerHTML = '';
+                        
+                        // Generate new QR code
+                        QRCode.toCanvas(document.createElement('canvas'), arUrl, {
                             width: 200,
                             margin: 2,
                             color: {
                                 dark: '#000000',
                                 light: '#ffffff'
                             }
-                        }, function(error) {
-                            if (error) throw error;
-                            statusDiv.innerHTML = '<span style="color:#4285f4">✓ QR code generated!</span>';
-                            console.log('QR generated successfully');
+                        }, function(error, canvas) {
+                            if (error) {
+                                throw error;
+                            }
+                            qrContainer.appendChild(canvas);
+                            statusDiv.innerHTML = '<span style="color:#34a853">✓ QR code generated!</span>';
+                            console.log('QR generated for:', arUrl);
                         });
                     } catch (error) {
-                        statusDiv.innerHTML = '<span style="color:#d32f2f">✗ Error: ' + error.message + '</span>';
+                        qrContainer.innerHTML = 'Error generating QR';
+                        statusDiv.innerHTML = '<span style="color:#ea4335">✗ ' + error.message + '</span>';
                         console.error('QR generation failed:', error);
                     }
                 };
